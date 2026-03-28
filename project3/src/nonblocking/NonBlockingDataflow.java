@@ -1,7 +1,7 @@
 /*   Filename: NonBlockingDataflow
   ************************************************************
   Author:     Dr. Parson (modified Spring 2026 by Dr. Schwesinger)
-  Student co-author: 
+  Student co-author: Vince Marinelli
   Assignment: #3
   Class NonBlockingDataflow is the main multi-threaded test driver for
   assignment 3's pipeline. This driver class is @Immutable because it
@@ -14,6 +14,7 @@ import net.jcip.annotations.* ;
 import java.io.PrintStream ;
 import java.io.FileNotFoundException ;
 import java.util.Queue ;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference ;
 import java.util.concurrent.atomic.AtomicReferenceArray ;
 import java.lang.reflect.* ;   // We look up the name of the Queue.
@@ -132,20 +133,22 @@ public class NonBlockingDataflow {
         // I need to find a better Java stats library some day.
         MakeExponential mexp = new MakeExponential(10, size, seed);
         // ^^^ put mean at 10ish
+
         Thread [] runners = new Thread [ 9 ] ;
+        CountDownLatch cdLatch = new CountDownLatch(runners.length);
 
         DistributionGenerator dgen1 = new DistributionGenerator(munif,
-            iterations, q5a, printer);
+            iterations, q5a, printer, cdLatch);
         DistributionGenerator dgen2 = new DistributionGenerator(mnorm,
-            iterations, q5b, printer);
+            iterations, q5b, printer, cdLatch);
         DistributionGenerator dgen3 = new DistributionGenerator(mexp,
-            iterations, q5c, printer);
+            iterations, q5c, printer, cdLatch);
         StatisticalAnalysisGenerator statgen_a
-            = new StatisticalAnalysisGenerator(iterations, q5a, q10a, printer);
+            = new StatisticalAnalysisGenerator(iterations, q5a, q10a, printer, cdLatch);
         StatisticalAnalysisGenerator statgen_b
-            = new StatisticalAnalysisGenerator(iterations, q5b, q10b, printer);
+            = new StatisticalAnalysisGenerator(iterations, q5b, q10b, printer, cdLatch);
         StatisticalAnalysisGenerator statgen_c
-            = new StatisticalAnalysisGenerator(iterations, q5c, q10c, printer);
+            = new StatisticalAnalysisGenerator(iterations, q5c, q10c, printer, cdLatch);
         // StatisticalAnalysisCSVSaver() now re-throws java.io.IOException
         // so an aborted creation of a FileWriter can avoid volatile file.
         StatisticalAnalysisCSVSaver csvgen_a = null ;
@@ -153,11 +156,11 @@ public class NonBlockingDataflow {
         StatisticalAnalysisCSVSaver csvgen_c = null ;
         try {
             csvgen_a = new StatisticalAnalysisCSVSaver(
-                iterations, q10a, QNAME + "_a.csv", printer);
+                iterations, q10a, QNAME + "_a.csv", printer, cdLatch);
             csvgen_b = new StatisticalAnalysisCSVSaver(
-                iterations, q10b, QNAME + "_b.csv", printer);
+                iterations, q10b, QNAME + "_b.csv", printer, cdLatch);
             csvgen_c = new StatisticalAnalysisCSVSaver(
-                iterations, q10c, QNAME + "_c.csv", printer);
+                iterations, q10c, QNAME + "_c.csv", printer, cdLatch);
         } catch (java.io.IOException iox) {
             System.err.println("ERROR opening output CSV file: "
                 + iox.getMessage());
@@ -181,11 +184,11 @@ public class NonBlockingDataflow {
             for (Thread t : runners) {
                 t.start();
             }
-            for (Thread t : runners) {
-                try {
-                    t.join();
-                } catch (InterruptedException xx) {
-                }
+            // use countdown latch here
+            try {
+                cdLatch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         } else {
             throw new RuntimeException(

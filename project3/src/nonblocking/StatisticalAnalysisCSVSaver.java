@@ -1,7 +1,7 @@
 /*   Filename: StatisticalAnalysisCSVSaver.java
   ************************************************************
   Author:     Dr. Parson
-  Student co-author: 
+  Student co-author: Vince Marinelli
   Assignment: #3
   Class StatisticalAnalysisCSVSaver is the first pipeline stage
   that generates statistical distributions for downstream
@@ -15,6 +15,7 @@ import net.jcip.annotations.* ;
 import java.lang.management.* ;
 import java.io.PrintStream ;
 import java.io.FileNotFoundException ;
+import java.util.concurrent.CountDownLatch;
 
 @ThreadSafe
 public class StatisticalAnalysisCSVSaver implements Runnable {
@@ -26,10 +27,14 @@ public class StatisticalAnalysisCSVSaver implements Runnable {
     @GuardedBy("printer")
     private final PrintStream printer ;
     private final FileWriter fwrt ;
+
+    private final CountDownLatch cdLatch;
+
     public StatisticalAnalysisCSVSaver(int howManyTimesToYield,
         INonBlockingTupleExchange<TenTuple> exchanger, String CSVfilename,
-        PrintStream printer)
-        throws java.io.IOException {
+        PrintStream printer,
+        CountDownLatch cdLatch
+    ) throws java.io.IOException {
         this.howManyTimesToYield = howManyTimesToYield ;
         this.exchanger = exchanger ;
         this.CSVfilename = CSVfilename ;
@@ -37,30 +42,39 @@ public class StatisticalAnalysisCSVSaver implements Runnable {
         fwrt = new FileWriter(CSVfilename);
         Stats.writeCSVrow(fwrt, header);
         fwrt.flush();   // run() is in a different thread than constructor.
+        this.cdLatch = cdLatch;
     }
+
     private static Object [] header =
         {"Distribution", "Param1", "Param2", "Count",
             "Mean", "Median", "Mode", "Pstdev", "Min", "Max"};
+
     public void run() {
-        // Runs service thread only in multi-threaded case.
-        ThreadMXBean bean = ManagementFactory.getThreadMXBean();
-        long startCPU = bean.getCurrentThreadCpuTime();
-        long startUser = bean.getCurrentThreadUserTime();
-        // Runs service thread or called directly in main-thread-only.
-        for (int i = 0 ; i < howManyTimesToYield ; i++) {
-            run1iteration(i == (howManyTimesToYield-1));
+        try {
+            // Runs service thread only in multi-threaded case.
+            ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+            long startCPU = bean.getCurrentThreadCpuTime();
+            long startUser = bean.getCurrentThreadUserTime();
+            // Runs service thread or called directly in main-thread-only.
+            for (int i = 0; i < howManyTimesToYield; i++) {
+                run1iteration(i == (howManyTimesToYield - 1));
+            }
+            double allCPU = ((double) bean.getCurrentThreadCpuTime()
+                    - (double) startCPU) / 1000000000d;
+            double userCPU = ((double) bean.getCurrentThreadUserTime()
+                    - (double) startUser) / 1000000000d;
+            // Serialize access to the printer which is not thread-safe.
+            synchronized (printer) {
+                printer.println("\nStatisticalAnalysisCSVSaver CPU TIME "
+                        + allCPU + ", USER CPU " + userCPU + " seconds");
+                printer.flush();
+            }
         }
-        double allCPU = ((double) bean.getCurrentThreadCpuTime()
-            - (double) startCPU) / 1000000000d ;
-        double userCPU = ((double) bean.getCurrentThreadUserTime()
-            - (double) startUser) / 1000000000d ;
-        // Serialize access to the printer which is not thread-safe.
-        synchronized(printer) {
-            printer.println("\nStatisticalAnalysisCSVSaver CPU TIME "
-                + allCPU + ", USER CPU " + userCPU + " seconds");
-            printer.flush();
+        finally {
+            cdLatch.countDown();
         }
     }
+
     void run1iteration(boolean isCloseCSV) {
         // needed for single threaded testing
         TenTuple inmessage = null ;

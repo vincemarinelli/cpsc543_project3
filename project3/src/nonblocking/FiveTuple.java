@@ -1,7 +1,7 @@
 /*   Filename: FiveTuple.java
   ************************************************************
   Author:     Dr. Parson (modified Spring 2026 by Dr. Schwesinger)
-  Student co-author: 
+  Student co-author: Vince Marinelli
   Assignment: # 3
   FiveTuple is a "dumb" data container that students must make
   effectively immutable. The values field is mutable, so students

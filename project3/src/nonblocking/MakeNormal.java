@@ -1,7 +1,7 @@
 /*   Filename: MakeNormal.java
   ************************************************************
   Author:     Dr. Parson (modified Spring 2026 by Dr. Schwesinger)
-  Student co-author: 
+  Student co-author: Vince Marinelli
   Assignment: #3
   Class MakeNormal makes and stores a Gaussian distribution
   @see NonBlockingDataflow

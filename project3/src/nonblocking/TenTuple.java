@@ -1,7 +1,7 @@
 /*   Filename: TenTuple.java
   ************************************************************
   Author:     Dr. Parson (modified Spring 2026 by Dr. Schwesinger)
-  Student co-author: 
+  Student co-author: Vince Marinelli
   Assignment: #3
   @see NonBlockingDataflow
   TenTuple is a "dumb" data container that students must make

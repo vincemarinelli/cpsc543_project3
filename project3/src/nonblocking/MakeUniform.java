@@ -1,7 +1,7 @@
 /*   Filename: MakeUniform.java
   ************************************************************
   Author:     Dr. Parson (modified Spring 2026 by Dr. Schwesinger)
-  Student co-author: 
+  Student co-author: Vince Marinelli
   Major:      Professor
   Assignment: #3
   Class MakeUniform makes and stores a Uniform distribution

@@ -1,7 +1,7 @@
 /*   Filename: INonBlockingTupleExchange.java, no STUDENT changes needed.
   ************************************************************
   Author:     Dr. Parson (modified Spring 2026 by Dr. Schwesinger)
-  Student co-author: 
+  Student co-author: Vince Marinelli
   Major:      Professor
   Assignment: #3
   Interface INonBlockingTupleExchange for NonBlockingQueue,
